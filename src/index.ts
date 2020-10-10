@@ -7,6 +7,15 @@ import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
+import { User } from "./entities/User";
+import { UserResolver } from "./resolvers/user";
+
+import redis from "redis";
+import session from "express-session";
+import connecctRedis from "connect-redis";
+
+let RedisStore = connecctRedis(session);
+let redisClient = redis.createClient();
 
 const main = async () => {
   const ormConnection = await createConnection({
@@ -19,7 +28,7 @@ const main = async () => {
     logging: true,
     // synchronize: true,
     migrations: [path.join(__dirname, "./migrations/*")],
-    entities: [Post],
+    entities: [Post, User],
     synchronize: true,
   });
 
@@ -28,12 +37,28 @@ const main = async () => {
   //     res.send("Hello world");
   //   });
 
+  app.use(
+    session({
+      name: "qid",
+      store: new RedisStore({ client: redisClient, disableTouch: true }),
+      secret: "keyboardererert",
+      cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 365,
+        httpOnly: true,
+        sameSite: "lax",
+      },
+
+      resave: false,
+      saveUninitialized: false,
+    })
+  );
+
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
-      resolvers: [HelloResolver, PostResolver],
+      resolvers: [HelloResolver, PostResolver, UserResolver],
       validate: false,
     }),
-    context: () => ({ ormConnection }),
+    context: ({ req, res }) => ({ ormConnection, req, res }),
   });
 
   apolloServer.applyMiddleware({ app });

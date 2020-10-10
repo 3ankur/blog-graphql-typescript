@@ -47,4 +47,18 @@ export class PostResolver {
     }
     return null;
   }
+
+  @Mutation(() => Boolean, { nullable: true })
+  async deletePost(
+    @Arg("id") id: number,
+    @Ctx() { ormConnection }: MyContext
+  ): Promise<boolean | null> {
+    const repository = ormConnection.getRepository(Post);
+    const post = await repository.findOne({ id });
+    if (post) {
+      await repository.delete({ id });
+      return true;
+    }
+    return null;
+  }
 }
