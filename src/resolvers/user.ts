@@ -51,7 +51,7 @@ export class UserResolver {
   @Mutation(() => UserResponse)
   async registerUser(
     @Arg("registerInput") options: UsernamePasswordInput,
-    @Ctx() { ormConnection }: MyContext
+    @Ctx() { ormConnection, req }: MyContext
   ) {
     const { username, password } = options;
     const errors = [];
@@ -81,7 +81,10 @@ export class UserResolver {
       user.password = hashPassword;
       user.createdAt = new Date();
       user.updatedAt = new Date();
-      return await repository.save(user);
+      const userResult = await repository.save(user);
+      console.log(userResult, "its the resukt");
+      req.session.userid = user.id.toString();
+      return { user: userResult };
     } catch (err) {
       console.log(err.code);
 

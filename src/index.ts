@@ -13,6 +13,7 @@ import { UserResolver } from "./resolvers/user";
 import redis from "redis";
 import session from "express-session";
 import connecctRedis from "connect-redis";
+import cors from "cors";
 
 let RedisStore = connecctRedis(session);
 let redisClient = redis.createClient();
@@ -38,6 +39,13 @@ const main = async () => {
   //   });
 
   app.use(
+    cors({
+      origin: "http://localhost:3000",
+      credentials: true,
+    })
+  );
+
+  app.use(
     session({
       name: "qid",
       store: new RedisStore({ client: redisClient, disableTouch: true }),
@@ -61,7 +69,7 @@ const main = async () => {
     context: ({ req, res }) => ({ ormConnection, req, res }),
   });
 
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({ app, cors: false });
 
   app.listen(4000, () => {
     console.log("Server stated at 4000");
